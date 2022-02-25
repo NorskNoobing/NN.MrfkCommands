@@ -1,4 +1,4 @@
-function Get-CMDevice {
+function Get-CMDevice-wt {
     Invoke-Command -Credential $(Get-AdmCreds) -ComputerName wintools04 -ScriptBlock {
         import-module 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin\ConfigurationManager.psd1'
         set-location ps1:
