@@ -197,35 +197,41 @@ function Get-Computer {
         }
         elseif ($tnc.status -eq "Success") {
             $status = "Online"
+            $dock = Invoke-Command -ComputerName $hostname -ScriptBlock {
+                (Get-PnpDevice -PresentOnly | where FriendlyName -like "*dock*" | where Class -like "*USB*").FriendlyName
+            }
+        }
+
+        $computerinfo = [PSCustomObject]@{
+            Hostname          = $hostname
+            DisplayName       = $displayname
+            Username          = $username
+            MACAddress        = $mac
+            Model             = $model
+            SN                = $sn
+            GUID              = $guid
+            CreatedAt         = $created
+            IsActive          = $IsActive
+            DeviceOSBuild     = $DeviceOSBuild
+            OS                = $OperatingSystem
+            IPv4              = $IPv4Address
+            Enabled           = $Enabled
+            Collections       = $collectionsarray
+            Status            = $status
+            LastHardwareScan  = $LastHardwareScan
+            LastPolicyRequest = $LastPolicyRequest
+            LastDDR           = $LastDDR
+            Win11Compatible   = $win11compat
+            CPUGeneration     = $CPUGen
+            Dock              = $dock
         }
 
         # OUTPUT TYPE
         if ($OutFile) {
-            Add-Content -Path $OutFile -Value "$hostname,$displayname,$username,$mac,$model,$sn,$guid,$created,$IsActive,$DeviceOSBuild,$OperatingSystem,$IPv4Address,$Enabled,$collectionsarray,$LastHardwareScan,$LastPolicyRequest,$LastDDR,$win11compat,$CPUGen"
+            Add-Content -Path $OutFile -Value "$hostname,$displayname,$username,$mac,$model,$sn,$guid,$created,$IsActive,$DeviceOSBuild,$OperatingSystem,$IPv4Address,$Enabled,$collectionsarray,$LastHardwareScan,$LastPolicyRequest,$LastDDR,$win11compat,$CPUGen,$dock"
         }
         else {
-            [PSCustomObject]@{
-                Hostname          = $hostname
-                DisplayName       = $displayname
-                Username          = $username
-                MACAddress        = $mac
-                Model             = $model
-                SN                = $sn
-                GUID              = $guid
-                CreatedAt         = $created
-                IsActive          = $IsActive
-                DeviceOSBuild     = $DeviceOSBuild
-                OS                = $OperatingSystem
-                IPv4              = $IPv4Address
-                Enabled           = $Enabled
-                Collections       = $collectionsarray
-                Status            = $status
-                LastHardwareScan  = $LastHardwareScan
-                LastPolicyRequest = $LastPolicyRequest
-                LastDDR           = $LastDDR
-                Win11Compatible   = $win11compat
-                CPUGeneration     = $CPUGen
-            }
+            $computerinfo
         }
     }
     #
