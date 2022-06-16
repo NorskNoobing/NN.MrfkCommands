@@ -119,7 +119,6 @@ function Get-Computer {
     param (
         $hostname, $importpath, $collectionIDs, $OutFile, $displayname, $username, $filter, $inputpath, $collectionNames
     )
-    $Global:GetComputer = $null
     Import-Module 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin\ConfigurationManager.psd1'
     Set-Location ps1:
     $allcomputers = New-Object -TypeName System.Collections.ArrayList
@@ -190,9 +189,6 @@ function Get-Computer {
         }
         
     }
-    else {
-        $Global:GetComputer = New-Object -TypeName System.Collections.ArrayList
-    }
 
     #
     #
@@ -222,9 +218,6 @@ function Get-Computer {
     #
     # - END
     #
-    if ($GetComputer) {
-        $GetComputer
-    }
     $Global:displayname = $null
     $Global:username = $null
     $filter = $null
