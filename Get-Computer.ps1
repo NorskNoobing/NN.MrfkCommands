@@ -4,6 +4,7 @@
     3. Set required params and param types
     4. Foreach-Object -Parallel
     5. Add everything to PSCustomObject then output (write to cli or append object to file)
+    6. Replace all global variables
 #>
 function CompInf {
     param (
@@ -14,12 +15,18 @@ function CompInf {
     $cmdeviceinfo = get-cmdevice -name $hostname
     $adcomputer = Get-ADComputer $hostname -Properties *
     $collections = Get-CimInstance -ComputerName sccm-ps.intern.mrfylke.no -Namespace root/SMS/site_PS1 -Query "SELECT SMS_Collection.* FROM SMS_FullCollectionMembership, SMS_Collection where name = '$hostname' and SMS_FullCollectionMembership.CollectionID = SMS_Collection.CollectionID"
+    
     # FILTER OUT DUPLICATES IN MECM
     if ($cmdeviceinfo -is [array]) {
         $cmdeviceinfo = $cmdeviceinfo[0]
     }
+
     $model = ($collections.Name | Select-String "All HP Elite*", "All HP Pro*", "All HP Z*", "All Lenovo Think*") -replace "All ", ""
-    $mac = ($cmdeviceinfo.MACAddress) -replace ',', ''
+    if ($model -is [array]) {
+        $model = $model[0]
+    }
+
+    $mac = $cmdeviceinfo.MACAddress
     $sn = $cmdeviceinfo.serialnumber
     $guid = $cmdeviceinfo.SMBIOSGUID
     $IsActive = $cmdeviceinfo.IsActive
@@ -62,8 +69,6 @@ function CompInf {
     }
 
     if (!($Global:displayname -or $Global:username)) {
-        $displayname = $null
-        $username = $null
         $username = $cmdeviceinfo.username
         $displayname = (Get-ADUser "$username" -Properties DisplayName).DisplayName
     }
@@ -108,7 +113,7 @@ function CompInf {
 
     # OUTPUT TYPE
     if ($OutFile) {
-        Add-Content -Path $OutFile -Value "$hostname,$displayname,$username,$mac,$model,$sn,$guid,$created,$IsActive,$DeviceOSBuild,$OperatingSystem,$IPv4Address,$Enabled,$collectionsarray,$LastHardwareScan,$LastPolicyRequest,$LastDDR,$win11compat,$CPUGen"
+        Add-Content -Path $OutFile -Value "$hostname;$displayname;$username;$mac;$model;$sn;$guid;$created;$IsActive;$DeviceOSBuild;$OperatingSystem;$IPv4Address;$Enabled;$collectionsarray;$LastHardwareScan;$LastPolicyRequest;$LastDDR;$win11compat;$CPUGen"
     }
     else {
         $computerinfo
@@ -117,7 +122,7 @@ function CompInf {
 
 function Get-Computer {
     param (
-        $hostname, $importpath, $collectionIDs, $OutFile, $displayname, $username, $filter, $inputpath, $collectionNames
+        $hostname, $importpath, $collectionIDs, $OutFile, $displayname, $username, $filter, $collectionNames
     )
     Import-Module 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin\ConfigurationManager.psd1'
     Set-Location ps1:
@@ -178,11 +183,11 @@ function Get-Computer {
         $DoesOutFileExist = Test-Path -Path $OutFile -PathType Leaf
         if (!$DoesOutFileExist) {
             New-Item -Path $OutFile -ItemType File | Out-Null
-            Set-Content -Path $OutFile -Value "Hostname,DisplayName,Username,MAC,Model,S/N,GUID,Created,IsActive,DeviceOSBuild,OperatingSystem,IPv4Address,Enabled,Collections,LastHardwareScan,LastPolicyRequest,LastDDR,Win11Compatible,CPUGeneration"
+            Set-Content -Path $OutFile -Value "Hostname;DisplayName;Username;MAC;Model;S/N;GUID;Created;IsActive;DeviceOSBuild;OperatingSystem;IPv4Address;Enabled;Collections;LastHardwareScan;LastPolicyRequest;LastDDR;Win11Compatible;CPUGeneration"
         }
         else {
             # STOP CHECK FOR ALL HOSTNAMES ALREADY IN FILE
-            $inputcsv = (Import-Csv $OutFile).Hostname
+            $inputcsv = (Import-Csv $OutFile -Delimiter ";").Hostname
             foreach ($hostname in $inputcsv) {
                 $allcomputers.Remove($hostname)
             }
@@ -220,6 +225,4 @@ function Get-Computer {
     #
     $Global:displayname = $null
     $Global:username = $null
-    $filter = $null
-    $inputpath = $null
 }
