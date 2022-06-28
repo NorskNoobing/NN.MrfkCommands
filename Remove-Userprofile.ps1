@@ -6,9 +6,9 @@ function Remove-Userprofile {
     
     #TODO: Get hostnames
     $hostnames | ForEach-Object {
-        $hostname = "$_"
+        $hostname = $_
         #Connect to remote computer
-        Invoke-Command -Credential $(Get-AdmCreds) -ComputerName $hostname -ScriptBlock {
+        Invoke-Command -ComputerName $hostname -ScriptBlock {
             #Force user to logoff
             $sessionId = ((quser.exe | Where-Object {$_ -match $username}) -split ' +')[2]
             logoff.exe $sessionId
