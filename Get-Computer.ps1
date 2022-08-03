@@ -1,57 +1,50 @@
 <#
     1. Add CollectionName
-    2. Call on functions within function to prevent using $var = $null
-    3. Set required params and param types
-    4. Foreach-Object -Parallel
-    5. Add everything to PSCustomObject then output (write to cli or append object to file)
-    6. Define type at every new variable, then remove all the if($var is [type])
+    2. Define type at every new variable, then remove all the if($var is [type])
+    3. Set requirement of PS7
 #>
 function CompInf {
     param (
         [Parameter(Mandatory)][string]$hostname,
-        [string]$OutFile
+        [Parameter(Mandatory)][string]$MECMModulePath,
+        [string]$OutFile,
+        [bool]$skipdb
     )
-    Import-Module 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin\ConfigurationManager.psd1'
+
+    Import-Module $MECMModulePath
     Set-Location ps1:
 
-    $cmdeviceinfo = ([array](get-cmdevice -name $hostname))[0] #FILTER OUT DUPLICATES IN MECM
+    $cmdeviceinfo = ([array](get-cmdevice -name $hostname))[0] #FILTER OUT DUPLICATES OF THE SAME HOSTNAME IN MECM
     $adcomputer = Get-ADComputer $hostname -Properties *
-    $collections = Get-CimInstance -ComputerName sccm-ps.intern.mrfylke.no -Namespace root/SMS/site_PS1 -Query "SELECT SMS_Collection.* FROM SMS_FullCollectionMembership, SMS_Collection where name = '$hostname' and SMS_FullCollectionMembership.CollectionID = SMS_Collection.CollectionID"
 
-    #todo: ask the db for model instead of relying on collectionname
-    $model = ([array](($collections.Name | Select-String "All HP*", "All Lenovo*") -replace "All ", ""))[0] #Filter out $model outputting multiple names by selecting the first object in array. E.g. "HP Elitebook 840 G3 HP EliteBook 840 G3 = N75 Ver 01.53"
+    if (!$skipdb) {
+        [array]$collections = Get-CimInstance -ComputerName sccm-ps.intern.mrfylke.no -Namespace root/SMS/site_PS1 -Query "SELECT SMS_Collection.* FROM SMS_FullCollectionMembership, SMS_Collection where name = '$hostname' and SMS_FullCollectionMembership.CollectionID = SMS_Collection.CollectionID"
 
-    [string]$CPUGen = ($collections.Name | Select-String " Gen - ") -replace "All ", ""
-
-    # WIN11 COMPATIBILITY
-    [int]$CPUGenNumber = $CPUGen -replace "[^0-9]"
-    if (($CPUGenNumber -le 7) -and ($CPUGenNumber -gt 0)) {
-        $win11compat = $false
-    } elseif ($CPUGenNumber -ge 8) {
-        $win11compat = $true
-    } else {
-        $win11compat = "UNKNOWN"
+        [string]$model = ([array](($collections.Name | Select-String "All HP*", "All Lenovo*") -replace "All ", ""))[0] #Filter out $model outputting multiple names by selecting the first object in array. E.g. "HP Elitebook 840 G3 HP EliteBook 840 G3 = N75 Ver 01.53"
+    
+        [string]$CPUGenName = ($collections.Name | Select-String " Gen - ") -replace "All ", ""
+        [string]$CPUGenNumber = $CPUGenName -replace "[^0-9]"
     }
 
-    $username = $cmdeviceinfo.username
-    $displayname = (Get-ADUser "$username" -Properties DisplayName).DisplayName
+    [string]$username = $cmdeviceinfo.username
+    [string]$displayname = (Get-ADUser "$username" -Properties DisplayName).DisplayName
 
     #Get online status
     try {
         $tnc = Test-Connection $hostname -Count 1 -ErrorAction "Stop"
 
         if ($tnc.Status -eq "TimedOut") {
-            $status = "Offline"
+            [string]$status = "Offline"
         }
         elseif ($tnc.status -eq "Success") {
-            $status = "Online"
+            [string]$status = "Online"
         }
     }
     catch [System.Net.NetworkInformation.PingException] {
-        $status = "Can't resolve hostname"
+        [string]$status = "Can't resolve hostname"
     }
 
-    $computerinfo = [PSCustomObject]@{
+    [PSCustomObject]@{
         Hostname          = $hostname
         DisplayName       = $displayname
         Username          = $username
@@ -60,43 +53,54 @@ function CompInf {
         SN                = $cmdeviceinfo.serialnumber
         GUID              = $cmdeviceinfo.SMBIOSGUID
         CreatedAt         = $adcomputer.Created
-        IsActive          = $cmdeviceinfo.IsActive
+        "IsActive(MECM)"  = $cmdeviceinfo.IsActive
         DeviceOSBuild     = $cmdeviceinfo.DeviceOSBuild
         OS                = $adcomputer.OperatingSystem
         IPv4              = $adcomputer.IPv4Address
-        Enabled           = $adcomputer.Enabled
+        "Enabled(AD)"     = $adcomputer.Enabled
         Status            = $status
         LastHardwareScan  = $cmdeviceinfo.LastHardwareScan
         LastPolicyRequest = $cmdeviceinfo.LastPolicyRequest
         LastDDR           = $cmdeviceinfo.LastDDR
-        Win11Compatible   = $win11compat
-        CPUGeneration     = $CPUGen
-    }
-
-    # OUTPUT TYPE
-    if ($OutFile) {
-        $computerinfo | Export-Csv -Path $OutFile -Delimiter ";" -Append #fix: file is in use by another process
-    }
-    else {
-        $computerinfo
+        CPUGeneration     = $CPUGenNumber
     }
 }
+
 function Get-Computer {
     param (
-        [array]$hostnames, 
-        [array]$importExcelPaths, 
-        [array]$collectionIDs, 
-        [string]$OutFile, 
-        [array]$displaynames, 
-        [array]$usernames, 
-        [string]$filter
+        [array]$hostnames,
+        [array]$importExcelPaths,
+        [array]$collectionIDs,
+        [array]$displaynames,
+        [array]$usernames,
+        [string]$OutFile,
+        [string]$filter,
+        [switch]$skipdb
     )
-    Import-Module 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin\ConfigurationManager.psd1'
-    Set-Location ps1:
-    $allcomputers = New-Object -TypeName System.Collections.ArrayList
-    $allfilteredcomputers = New-Object -TypeName System.Collections.ArrayList
 
-    # - INPUTS
+    if (-not ($hostnames -or $importExcelPaths -or $collectionIDs -or $displaynames -or $usernames)) {
+        throw "Input missing"
+    }
+
+    switch ($env:COMPUTERNAME) {
+        "wintools03" {
+            [string]$MECMModulePath = 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin\ConfigurationManager.psd1'
+            
+        }
+        "wintools04" {
+            [string]$MECMModulePath = 'C:\Program Files (x86)\Microsoft Endpoint Manager\AdminConsole\bin\ConfigurationManager.psd1'
+        }
+        Default {
+            throw "Please run this function on a supported computer."
+        }
+    }
+
+    Import-Module $MECMModulePath
+
+    $allcomputers = New-Object -TypeName System.Collections.ArrayList
+    $allCompInf = [System.Collections.Concurrent.ConcurrentBag[psobject]]::new()
+
+    #INPUTS
     # XLSX
     if ($importExcelPaths) {
         $importExcelPaths | Foreach-Object {
@@ -113,17 +117,22 @@ function Get-Computer {
     }
     # COLLECTIONID
     if ($collectionIDs) {
+        Set-Location ps1:
         $collectionIDs | Foreach-Object {
-            $cidHostnamearray = (Get-CMCollectionMember -CollectionId $_).Name
+            [array]$cidHostnamearray = (Get-CMCollectionMember -CollectionId $_).Name
             $cidHostnamearray | Foreach-Object {
                 $allcomputers.Add($_) | Out-Null
             }
         }
+        Set-Location "C:"
     }
     # DISPLAYNAME
     if ($displaynames) {
         $displaynames | Foreach-Object {
-            $dnUsername = (Get-ADUser -Filter { DisplayName -like $_ }).Name
+            [array]$dnUsername = (Get-ADUser -Filter { DisplayName -like "$_" }).Name
+            $dnUsername | ForEach-Object {
+
+            }
             [array]$dnHostname = (Get-CimInstance -ComputerName sccm-ps.intern.mrfylke.no -Namespace root/SMS/site_PS1 -Query "select Name from sms_r_system where LastLogonUserName='$dnUsername'").Name
             $dnHostname | Foreach-Object {$allcomputers.Add($_) | Out-Null}
         }
@@ -136,13 +145,13 @@ function Get-Computer {
         }
     }
 
-    # - FILTERS
+    #FILTERS
     if ($OutFile) {
-        $DoesOutFileExist = Test-Path -Path $OutFile -PathType Leaf
+        [bool]$DoesOutFileExist = Test-Path -Path $OutFile -PathType Leaf
         
         if ($DoesOutFileExist) {
             #Filter out all hostnames already in file
-            $importHostnames = (Import-Csv $OutFile -Delimiter ";").Hostname
+            [array]$importHostnames = (Import-Csv $OutFile -Delimiter ";").Hostname
             $importHostnames | ForEach-Object {
                 if ($allcomputers -contains $_) {
                     $allcomputers.Remove($_)
@@ -151,17 +160,37 @@ function Get-Computer {
         }
     }
 
-    $allcomputers | ForEach-Object {
-        if ($_ -like "*$filter*") {
-            $allfilteredcomputers.Add($_) | Out-Null
+    if ($filter) {
+        $allcomputers | ForEach-Object {
+            if ($_ -like "*$filter*") {
+                $allcomputers.Remove($_) | Out-Null
+            }
         }
     }
     
-    # FILTER OUT DUPLICATES IN MECM
-    $allfilteredcomputers = $allfilteredcomputers | Select-Object -Unique #side effect: Changes arraylist to array
+    #Removes duplicate hostnames from array
+    [array]$allcomputers = $allcomputers | Select-Object -Unique
 
-    # - CODE
-    $allfilteredcomputers | Foreach-Object {
-        CompInf -hostname $_ -OutFile $OutFile
+    #CODE
+    $CompInfDef = ${function:CompInf}.ToString()
+
+    if ($skipdb) {
+        $throttlelimit = 1000
+    } else {
+        $throttlelimit = 10
+    }
+
+    $allcomputers | Foreach-Object -ThrottleLimit $throttlelimit -Parallel {
+        ${function:CompInf} = $using:CompInfDef
+        $currentCompInf = CompInf -hostname $_ -OutFile $using:OutFile -skipdb $using:skipdb -MECMModulePath $using:MECMModulePath
+        ($using:allCompInf).Add($currentCompInf)
+    }
+
+    # OUTPUT TYPE
+    if ($OutFile) {
+        $allCompInf | Export-Csv -Path $OutFile -Delimiter ";" -Append
+    }
+    else {
+        $allCompInf
     }
 }
