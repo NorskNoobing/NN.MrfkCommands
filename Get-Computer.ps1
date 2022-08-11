@@ -129,10 +129,8 @@ function Get-Computer {
     # DISPLAYNAME
     if ($displaynames) {
         $displaynames | Foreach-Object {
-            [array]$dnUsername = (Get-ADUser -Filter { DisplayName -like "$_" }).Name
-            $dnUsername | ForEach-Object {
+            [string]$dnUsername = (Get-ADUser -Filter { DisplayName -like $_ }).Name
 
-            }
             [array]$dnHostname = (Get-CimInstance -ComputerName sccm-ps.intern.mrfylke.no -Namespace root/SMS/site_PS1 -Query "select Name from sms_r_system where LastLogonUserName='$dnUsername'").Name
             $dnHostname | Foreach-Object {$allcomputers.Add($_) | Out-Null}
         }
