@@ -259,6 +259,7 @@ function New-ShippingLabel {
         #Set printer named PR-STORLABEL-SSDSK to default printer
         <#if (!(Get-Printer -Name "PR-STORLABEL-SSDSK" -ErrorAction SilentlyContinue)) {
             todo: add PR-STORLABEL-SSDSK
+            (New-Object -ComObject WScript.Network).AddWindowsPrinterConnection("\\sr-safecom-sla1\PR-STORLABEL-SSDSK")
         }#>
         (New-Object -ComObject WScript.Network).SetDefaultPrinter("PR-STORLABEL-SSDSK")
 
