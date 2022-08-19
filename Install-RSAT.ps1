@@ -12,7 +12,7 @@ function Install-RSAT {
             Invoke-WUServerBypass
         }
     
-        $RSATNames = (Get-WindowsCapability -Name RSAT* -online | Where State -NotLike 'Installed').Name
+        $RSATNames = (Get-WindowsCapability -Name RSAT* -online | Where-Object State -NotLike 'Installed').Name
         
         foreach ($item in $RSATNames) {
             Get-WindowsCapability -Name $item -Online | Add-WindowsCapability -Online
