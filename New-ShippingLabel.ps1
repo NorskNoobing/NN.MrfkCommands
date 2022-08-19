@@ -3,97 +3,10 @@ function New-ShippingLabel {
         [ValidateSet("Atlanten VGS","Borgund VGS","Fagerlia VGS","Fagskolen i Alesund",
         "Gjermundnes VGS","Haram VGS","Herøy VGS","Hustadvika VGS","Kristiansund VGS","Rauma VGS","Romsdal VGS",
         "Spjelkavik VGS","Sunndal VGS","Sykkylven VGS","Surnadal VGS","Tingvoll VGS","Ulstein VGS","Volda VGS","Orsta VGS",
-        "Alesund VGS (Volsdalsberga)","Campus Kristiansund","Olsvika","Carolus","Fylkeshuset")][string]$location,
+        "Alesund VGS (Volsdalsberga)","Alesund VGS (Fagerlia)","Campus Kristiansund","Olsvika","Carolus","Fylkeshuset")][string]$location,
         [string]$displayname,
         [string]$mobile
     )
-
-    if (!$location -and !$displayname) {
-        #UI   
-        Add-Type -AssemblyName System.Windows.Forms
-        Add-Type -AssemblyName System.Drawing
-        
-        $form = New-Object System.Windows.Forms.Form
-        $form.Text = 'Shipping label'
-        $form.Size = New-Object System.Drawing.Size(300,250)
-        $form.StartPosition = 'CenterScreen'
-        
-        $okButton = New-Object System.Windows.Forms.Button
-        $okButton.Location = New-Object System.Drawing.Point(75,180)
-        $okButton.Size = New-Object System.Drawing.Size(75,23)
-        $okButton.Text = 'Print'
-        $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
-        $form.AcceptButton = $okButton
-        $form.Controls.Add($okButton)
-        
-        $cancelButton = New-Object System.Windows.Forms.Button
-        $cancelButton.Location = New-Object System.Drawing.Point(150,180)
-        $cancelButton.Size = New-Object System.Drawing.Size(75,23)
-        $cancelButton.Text = 'Cancel'
-        $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-        $form.CancelButton = $cancelButton
-        $form.Controls.Add($cancelButton)
-        
-        $label = New-Object System.Windows.Forms.Label
-        $label.Location = New-Object System.Drawing.Point(10,20)
-        $label.Size = New-Object System.Drawing.Size(280,20)
-        $label.Text = 'Displayname:'
-        $form.Controls.Add($label)
-        
-        $textBox = New-Object System.Windows.Forms.TextBox
-        $textBox.Location = New-Object System.Drawing.Point(10,40)
-        $textBox.Size = New-Object System.Drawing.Size(260,20)
-        $form.Controls.Add($textBox)
-        
-        $label = New-Object System.Windows.Forms.Label
-        $label.Location = New-Object System.Drawing.Point(10,70)
-        $label.Size = New-Object System.Drawing.Size(280,20)
-        $label.Text = 'Location:'
-        $form.Controls.Add($label)
-        
-        $listBox = New-Object System.Windows.Forms.ListBox
-        $listBox.Location = New-Object System.Drawing.Point(10,90)
-        $listBox.Size = New-Object System.Drawing.Size(260,20)
-        $listBox.Height = 80
-        
-        [void] $listBox.Items.Add("Atlanten VGS")
-        [void] $listBox.Items.Add("Borgund VGS")
-        [void] $listBox.Items.Add("Campus Kristiansund")
-        [void] $listBox.Items.Add("Fagerlia VGS")
-        [void] $listBox.Items.Add("Fagskolen i Alesund")
-        [void] $listBox.Items.Add("Gjermundnes VGS")
-        [void] $listBox.Items.Add("Haram VGS")
-        [void] $listBox.Items.Add("Herøy VGS")
-        [void] $listBox.Items.Add("Hustadvika VGS")
-        [void] $listBox.Items.Add("Kristiansund VGS")
-        [void] $listBox.Items.Add("Olsvika")
-        [void] $listBox.Items.Add("Rauma VGS")
-        [void] $listBox.Items.Add("Romsdal VGS")
-        [void] $listBox.Items.Add("Spjelkavik VGS")
-        [void] $listBox.Items.Add("Sunndal VGS")
-        [void] $listBox.Items.Add("Sykkylven VGS")
-        [void] $listBox.Items.Add("Surnadal VGS")
-        [void] $listBox.Items.Add("Tingvoll VGS")
-        [void] $listBox.Items.Add("Ulstein VGS")
-        [void] $listBox.Items.Add("Volda VGS")
-        [void] $listBox.Items.Add("Orsta VGS")
-        [void] $listBox.Items.Add("Alesund VGS (Volsdalsberga)")
-        [void] $listBox.Items.Add("Carolus")
-        [void] $listBox.Items.Add("Fylkeshuset")
-        
-        $form.Controls.Add($listBox)
-        
-        $form.Topmost = $true
-        
-        $form.Add_Shown({$textBox.Select()})
-        $result = $form.ShowDialog()
-        
-        if ($result -eq [System.Windows.Forms.DialogResult]::OK)
-        {
-            $displayname = $textBox.Text
-            $location = $listBox.Text
-        }
-    }
 
     #LOCATION
     #Get the selected locations address 
@@ -257,11 +170,10 @@ function New-ShippingLabel {
         $defaultPrinter = (Get-CimInstance -Class Win32_Printer).where{$_.Default -eq $true}.Name
 
         #Set printer named PR-STORLABEL-SSDSK to default printer
-        <#if (!(Get-Printer -Name "PR-STORLABEL-SSDSK" -ErrorAction SilentlyContinue)) {
-            todo: add PR-STORLABEL-SSDSK
+        if (!(Get-Printer -Name "\\sr-safecom-sla1\PR-STORLABEL-SSDSK" -ErrorAction SilentlyContinue)) {
             (New-Object -ComObject WScript.Network).AddWindowsPrinterConnection("\\sr-safecom-sla1\PR-STORLABEL-SSDSK")
-        }#>
-        (New-Object -ComObject WScript.Network).SetDefaultPrinter("PR-STORLABEL-SSDSK")
+        }
+        (New-Object -ComObject WScript.Network).SetDefaultPrinter("\\sr-safecom-sla1\PR-STORLABEL-SSDSK")
 
         #Create new Word document
         $WordObj = New-Object -ComObject Word.Application
