@@ -17,7 +17,7 @@ function New-UPN {
         [Parameter(Mandatory=$true)][string]$oldupn
     )
     if ($newupn -like '*@mrfylke.no') {
-        Set-ADUser -Credential $(Get-AdmCreds) -Identity $username -Replace @{UserPrincipalName="$newupn"}
+        Set-ADUser -Identity $username -Replace @{UserPrincipalName="$newupn"}
         "UPN for user $username has been changed to $newupn"
     } else {
         "New UPN doesn't contain @mrfylke.no"
