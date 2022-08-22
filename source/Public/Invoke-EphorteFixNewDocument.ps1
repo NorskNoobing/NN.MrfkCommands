@@ -1,4 +1,4 @@
-function Invoke-EphorteFix-NewDocument {
+function Invoke-EphorteFixNewDocument {
     param (
         [Parameter(Mandatory)][string]$hostname
     )
