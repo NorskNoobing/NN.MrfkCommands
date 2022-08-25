@@ -1,21 +1,32 @@
 function Install-RSAT {
     param (
-        [switch]$WUServerBypass
+        [switch]$WUServerBypass,
+        [string]$ModulePathPassthrough
     )
 
     try {
         Get-ADUser -Filter "Name -eq 0" | Out-Null
     }
     catch [System.Management.Automation.CommandNotFoundException] {
-        #todo: launch the following code with admin privledges
-        if ($using:WUServerBypass) {
-            Invoke-WUServerBypass
+        try {
+            gsudo
         }
-    
-        $RSATNames = (Get-WindowsCapability -Name RSAT* -online | Where-Object State -NotLike 'Installed').Name
+        catch [System.Management.Automation.CommandNotFoundException] {
+            throw "Gsudo needs to be installed before running this command. Please run Install-gsudo"
+        }
+
+        Invoke-gsudo {
+            Import-Module "$using:ModulePathPassthrough"
+
+            if ($using:WUServerBypass) {
+                Invoke-WUServerBypass
+            }
         
-        foreach ($item in $RSATNames) {
-            Get-WindowsCapability -Name $item -Online | Add-WindowsCapability -Online
+            $RSATNames = (Get-WindowsCapability -Name RSAT* -online | Where-Object State -NotLike 'Installed').Name 
+            
+            foreach ($item in $RSATNames) {
+                Get-WindowsCapability -Name $item -Online | Add-WindowsCapability -Online
+            }
         }
     }
 }
