@@ -1,10 +1,10 @@
 function New-ShippingLabel {
     param (
-        [ValidateSet("Atlanten VGS","Borgund VGS","Fagerlia VGS","Fagskolen i Alesund",
+        [Parameter(Mandatory)][ValidateSet("Atlanten VGS","Borgund VGS","Fagerlia VGS","Fagskolen i Alesund",
         "Gjermundnes VGS","Haram VGS","Herøy VGS","Hustadvika VGS","Kristiansund VGS","Rauma VGS","Romsdal VGS",
         "Spjelkavik VGS","Sunndal VGS","Sykkylven VGS","Surnadal VGS","Tingvoll VGS","Ulstein VGS","Volda VGS","Orsta VGS",
-        "Alesund VGS (Volsdalsberga)","Alesund VGS (Fagerlia)","Campus Kristiansund","Olsvika","Carolus","Fylkeshuset","Iteam")][string]$location,
-        [string]$displayname,
+        "Alesund VGS (Volsdalsberga)","Alesund VGS (Fagerlia)","Campus Kristiansund","Olsvika","Carolus","Fylkeshuset","Iteam","Skjeltene")][string]$location,
+        [Parameter(Mandatory)][string]$displayname,
         [string]$mobile
     )
 
@@ -160,6 +160,12 @@ function New-ShippingLabel {
             $address = "Grandfjæra 22A"
             $postalCode = "6415"
             $city = "Molde"
+        }
+        "Skjeltene" {
+            $locationName = "Møre og Romsdal Fylkeskommune"
+            $address = "Hildrestrandvegen 1018"
+            $postalCode = "6272"
+            $city = "Hildre"
         }
     }
 
