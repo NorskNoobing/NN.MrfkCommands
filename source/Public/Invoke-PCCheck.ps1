@@ -11,20 +11,9 @@ function Invoke-PCCheck {
     If (!(($psSessions -like '@{State=Opened; Name=ExchangeOnlineInternalSession*').Count -gt 0)) {
         throw "Run Connect-ExchangeOnline before running this function."
     }
-
-    #Fetch admCreds for running AD functions
-    $admCredsPath = "$env:USERPROFILE\.creds\Windows\adm_creds.xml"
-    if (!(Test-Path $admCredsPath)) {
-        New-Item -ItemType Directory $($admCredsPath.Substring(0, $admCredsPath.lastIndexOf('\'))) | Out-Null
-        
-        $admCreds = Get-Credential -Message "Enter admin credentials"
-        $admCreds | Export-Clixml $admCredsPath
-    } else {
-        $admCreds = Import-Clixml $admCredsPath
-    }
     
     #Get userinfo
-    $adUser = Get-ADUser -Credential $admCreds -Filter {DisplayName -eq $displayName} -Properties *
+    $adUser = Get-ADUser -Credential $(Get-AdmCreds) -Filter {DisplayName -eq $displayName} -Properties *
     $adUsername = $aduser.Name
     $homeDir = $adUser.HomeDirectory
     
@@ -57,7 +46,7 @@ function Invoke-PCCheck {
     [bool]$migrated = Get-EXOMailbox $adUser.mail -ErrorAction SilentlyContinue
     
     #Reset AD password
-    Set-ADAccountPassword $adUser.Name -Credential $admCreds -NewPassword ("Molde123!" | ConvertTo-SecureString -AsPlainText) -Reset
+    Set-ADAccountPassword $adUser.Name -Credential $(Get-AdmCreds) -NewPassword ("Molde123!" | ConvertTo-SecureString -AsPlainText) -Reset
 
     [PSCustomObject]@{
         DisplayName = $adUser.DisplayName
