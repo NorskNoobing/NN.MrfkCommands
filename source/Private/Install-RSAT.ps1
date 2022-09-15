@@ -9,7 +9,7 @@ function Install-RSAT {
     }
     catch [System.Management.Automation.CommandNotFoundException] {
         try {
-            gsudo
+            gsudo --version | Out-Null
         }
         catch [System.Management.Automation.CommandNotFoundException] {
             throw "Gsudo needs to be installed before running this command. Please run Install-gsudo"
