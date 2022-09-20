@@ -46,7 +46,7 @@ function Invoke-PCCheck {
     [bool]$migrated = Get-EXOMailbox $adUser.mail -ErrorAction SilentlyContinue
     
     #Reset AD password
-    Set-ADAccountPassword $adUser.Name -Credential $(Get-AdmCreds) -NewPassword ("Molde123!" | ConvertTo-SecureString -AsPlainText) -Reset
+    Set-ADAccountPassword $adUser.Name -Credential $(Get-AdmCreds) -NewPassword ("Molde123!" | ConvertTo-SecureString -AsPlainText) -Reset -Server "dc01.intern.mrfylke.no"
 
     [PSCustomObject]@{
         DisplayName = $adUser.DisplayName
