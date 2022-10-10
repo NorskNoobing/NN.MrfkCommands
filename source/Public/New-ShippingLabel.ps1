@@ -1,173 +1,19 @@
 function New-ShippingLabel {
+    #Requires -Module NN.SnipeIT,NN.WindowsSetup
     param (
-        [Parameter(Mandatory)][ValidateSet("Atlanten VGS","Borgund VGS","Fagerlia VGS","Fagskolen i Alesund",
-        "Gjermundnes VGS","Haram VGS","Herøy VGS","Hustadvika VGS","Kristiansund VGS","Rauma VGS","Romsdal VGS",
-        "Spjelkavik VGS","Sunndal VGS","Sykkylven VGS","Surnadal VGS","Tingvoll VGS","Ulstein VGS","Volda VGS","Orsta VGS",
-        "Alesund VGS (Volsdalsberga)","Alesund VGS (Fagerlia)","Campus Kristiansund","Olsvika","Carolus","Fylkeshuset","Iteam","Skjeltene")][string]$location,
+        [Parameter(Mandatory)][string]$location,
         [Parameter(Mandatory)][string]$displayname,
+        [int]$copies = 1,
         [string]$mobile
     )
 
-    #LOCATION
-    #Get the selected locations address 
-    switch ($location) {
-        "Atlanten VGS" { 
-            $locationName = "Atlanten videregående skole"
-            $address = "Dalaveien 25"
-            $postalCode = "6511"
-            $city = "Kristiansund"
-        }
-        "Borgund VGS" {
-            $locationName = "Borgund vidaregåande skule"
-            $address = "Yrkesskolevegen 20"
-            $postalCode = "6011"
-            $city = "Ålesund"
-        }
-        "Campus Kristiansund" {
-            $locationName = "Kristiansund Rådhus Campus"
-            $address = "Fosnagata 13"
-            $postalCode = "6509"
-            $city = "Kristiansund"
-        }
-        "Fagskolen i Alesund" {
-            $locationName = "Fagskolen Møre og Romsdal"
-            $address = "Fogd Greves veg 9"
-            $postalCode = "6009"
-            $city = "Ålesund"
-        }
-        "Gjermundnes VGS" {
-            $locationName = "Gjermundnes vidaregåande skule"
-            $address = "Gjermundnesvegen 200"
-            $postalCode = "6392"
-            $city = "Vikebukt"
-        }
-        "Haram VGS" {
-            $locationName = "Haram vidaregåande skule"
-            $address = "Skuleråsa 10"
-            $postalCode = "6270"
-            $city = "Brattvåg"
-        }
-        "Herøy VGS" {
-            $locationName = "Herøy vidaregåande skule"
-            $address = "Lisjebøveien 4"
-            $postalCode = "6091"
-            $city = "Fosnavåg"
-        }
-        "Hustadvika VGS" {
-            $locationName = "Hustadvika vidaregåande skole"
-            $address = "Bøen 22"
-            $postalCode = "6440"
-            $city = "Elnesvågen"
-        }
-        "Kristiansund VGS" {
-            $locationName = "Kristiansund videregående skole"
-            $address = "Sankthanshaugen 2"
-            $postalCode = "6514"
-            $city = "Kristiansund"
-        }
-        "Olsvika" {
-            $locationName = "Møre og Romsdal Fylkeskommune"
-            $address = "Vestre Olsvikveg 13"
-            $postalCode = "6019"
-            $city = "Ålesund"
-        }
-        "Rauma VGS" {
-            $locationName = "Rauma videregående skole"
-            $address = "Ringgata 35"
-            $postalCode = "6300"
-            $city = "Åndalsnes"
-        }
-        "Romsdal VGS" {
-            $locationName = "Romsdal videregående skole"
-            $address = "Langmyrvegen 83"
-            $postalCode = "6415"
-            $city = "Molde"
-        }
-        "Spjelkavik VGS" {
-            $locationName = "Spjelkavik vidaregåande skole"
-            $address = "Nedre Langhaugen 32"
-            $postalCode = "6011"
-            $city = "Ålesund"
-        }
-        "Sunndal VGS" {
-            $locationName = "Sunndal VGS"
-            $address = "Skoleveien 14"
-            $postalCode = "6600"
-            $city = "Sunndalsøra"
-        }
-        "Sykkylven VGS" {
-            $locationName = "Sykkylven vidaregåande skule"
-            $address = "Kyrkjevegen 6"
-            $postalCode = "6230"
-            $city = "Sykkylven"
-        }
-        "Surnadal VGS" {
-            $locationName = "Surnadal vidaregåande skole"
-            $address = "Øyatrøvegen 30"
-            $postalCode = "6650"
-            $city = "Surnadal"
-        }
-        "Tingvoll VGS" {
-            $locationName = "Tingvoll videregående skole"
-            $address = "Skolevegen 35"
-            $postalCode = "6630"
-            $city = "Tingvoll"
-        }
-        "Ulstein VGS" {
-            $locationName = "Ulstein vidaregåande skule"
-            $address = "Holsekerdalen 180"
-            $postalCode = "6065"
-            $city = "Ulsteinvik"
-        }
-        "Volda VGS" {
-            $locationName = "Volda vidaregåande skule"
-            $address = "Vevendelvegen 35"
-            $postalCode = "6102"
-            $city = "Volda"
-        }
-        "Orsta VGS" {
-            $locationName = "Ørsta vidaregåande skule"
-            $address = "Holmegata 14"
-            $postalCode = "6153"
-            $city = "Ørsta"
-        }
-        "Alesund VGS (Volsdalsberga)" {
-            $locationName = "Ålesund videregående skole avd. Volsdalsberga"
-            $address = "Sjømannsvegen 27"
-            $postalCode = "6008"
-            $city = "Ålesund"
-        }
-        "Alesund VGS (Fagerlia)" {
-            $locationName = "Ålesund videregående skole avd. Fagerlia"
-            $address = "Gangstøvikvegen 27"
-            $postalCode = "6009"
-            $city = "Ålesund"
-        }
-        "Carolus" {
-            $locationName = "Møre og Romsdal Fylkeskommune"
-            $address = "Bjørnstjerne Bjørnsons veg 6"
-            $postalCode = "6412"
-            $city = "Molde"
-        }
-        "Fylkeshuset" {
-            $locationName = "Møre og Romsdal Fylkeskommune"
-            $address = "Julsundvegen 9"
-            $postalCode = "6412"
-            $city = "Molde"
-        }
-        "Iteam" {
-            $locationName = "Iteam AS"
-            $address = "Grandfjæra 22A"
-            $postalCode = "6415"
-            $city = "Molde"
-        }
-        "Skjeltene" {
-            $locationName = "Møre og Romsdal Fylkeskommune"
-            $address = "Hildrestrandvegen 1018"
-            $postalCode = "6272"
-            $city = "Hildre"
-        }
-    }
+    #Get the selected locations address
+    $locationResult = Get-SnipeLocation -name $location
+
+    $locationName = $locationResult.address
+    $address = $locationResult.address2
+    $postalCode = $locationResult.zip
+    $city = $locationResult.city
 
     if ($displayname -and !$mobile) {
         #Install RSAT
@@ -215,8 +61,15 @@ function New-ShippingLabel {
         $address
         $postalCode $city")
 
-        #Send To Default Printer
-        $WordObj.PrintOut()
+        <#
+            https://books.google.no/books?id=rbpNppFdipkC&pg=PT114&lpg=PT114&dq=Application.PrintOut+%22copies%22+%22powershell%22&source=bl&ots=5_iiXja8EA&sig=ACfU3U11_KmhwFHlsOgEXNFcSHXx3rTvww&hl=en&sa=X&ved=2ahUKEwi-td6gzcb6AhXwlosKHTtAA9IQ6AF6BAgsEAM#v=onepage&q=Application.PrintOut%20%22copies%22%20%22powershell%22&f=false
+            https://learn.microsoft.com/en-us/office/vba/api/word.application.printout#parameters
+            I didn't manage to get it working through using the COM-object "copies" parameter, so I used a workaround within PowerShell
+        #>
+        (1..$copies).ForEach({
+            #Send To Default Printer
+            $WordObj.PrintOut()
+        })
 
         #Change default printer back to the previous value
         (New-Object -ComObject WScript.Network).SetDefaultPrinter("$defaultPrinter")
