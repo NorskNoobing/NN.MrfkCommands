@@ -1,1 +1,1 @@
-Register-ArgumentCompleter -CommandName New-ShippingLabel -ParameterName location -ScriptBlock {((Get-SnipeLocation).name | Sort-Object).ForEach({"`'$_`'"})}
+Register-ArgumentCompleter -CommandName New-ShippingLabel -ParameterName location -ScriptBlock {((Get-SnipeLocations).name | Sort-Object).ForEach({"`'$_`'"})}
