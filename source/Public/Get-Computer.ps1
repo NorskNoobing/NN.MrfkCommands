@@ -1,9 +1,9 @@
-#Takes approx 130ms per entry when piping inputs into the function
 function Get-Computer {
-    [CmdletBinding(DefaultParameterSetName="Get computer by hostname")]
+    [CmdletBinding(DefaultParameterSetName="List computers")]
     param (
         [Parameter(Mandatory,ValueFromPipeline,Position=0,ParameterSetName="Get computer by hostname")][string]$hostname,
-        [Parameter(ParameterSetName="Get computer by hostname")][pscredential]$credential
+        [pscredential]$credential,
+        [Parameter(ParameterSetName="List computers")][switch]$ListComputers
     )
     
     begin {
@@ -13,81 +13,53 @@ from SMS_R_System
 inner join SMS_G_System_PROCESSOR
 on SMS_G_System_PROCESSOR.ResourceID = SMS_R_System.ResourceId
 "@
-
+        Write-Information "$(Get-Date -Format "hh:mm:ss") Creating CimSession"
         $cimsession = New-CimSession -Credential $credential -ComputerName sccm-ps.intern.mrfylke.no -ErrorAction Stop
-        
+
+        Write-Information "$(Get-Date -Format "hh:mm:ss") Fetching all AD computers"
         $allAdComputers = Get-ADComputer -Filter *
+        Write-Information "$(Get-Date -Format "hh:mm:ss") Fetching MECM computers"
         $allMecmComputers = Get-CimInstance -Query "Select * from SMS_R_System" -Namespace root/SMS/site_PS1 -CimSession $cimsession
+        Write-Information "$(Get-Date -Format "hh:mm:ss") Fetching all CPU info"
         $allCpuInfo = Get-CimInstance -Query $allCpuInfoQry -Namespace root/SMS/site_PS1 -CimSession $cimsession
+        Write-Information "$(Get-Date -Format "hh:mm:ss") Fetching all model info"
         $allModelInfo = Get-CimInstance -Query "Select * from SMS_G_System_Computer_System_Product" -Namespace root/SMS/site_PS1 -CimSession $cimsession
     
         $compInfExport = New-Object -TypeName System.Collections.ArrayList
     }
     
     process {
-        $notes = New-Object -TypeName System.Collections.ArrayList
-        $mecmComputer = $allMecmComputers.where({$_.Name -eq $hostname})
-        $cpuInfo = $allCpuInfo.where({$_.SystemName -eq $hostname})
-        $adComputer = $allAdComputers.where({$_.Name -eq $hostname})
-        $modelInfo = $allModelInfo.where({$_.ResourceID -eq $mecmComputer.ResourceId})
+        switch ($PsCmdlet.ParameterSetName) {
+            "List computers" {
+                $CompInfDef = ${function:Get-CompInf}.ToString()
 
-        if ($mecmComputer.LastLogonUserName) {
-            try {
-                $adUser = Get-ADUser $mecmComputer.LastLogonUserName -Properties DisplayName
-            }
-            catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
-                $null = $notes.Add("Can't find user with the identity `"$($mecmComputer.LastLogonUserName)`"")
-            }
-        } else {
-            $null = $notes.Add("There's no last logged on user")
-        }
+                $compInfExport = $allMecmComputers | ForEach-Object -ThrottleLimit 5000 -Parallel {
+                    ${function:Get-CompInf} = $using:CompInfDef
+                    Write-Information "$(Get-Date -Format "hh:mm:ss") Fetching CompInf for `"$($_.Name)`""
 
-        if ($mecmComputer.agentname) {
-            $heartbeatIndex = $mecmComputer.agentname.IndexOf("Heartbeat Discovery")
-            $lastHeartbeat = $mecmComputer.agenttime[$heartbeatIndex]
-        }
-        
-        $IPv4 = $mecmComputer.IPAddresses.ForEach({
-            if ($_ -like "*.*") {
-                $_
+                    $CompInfSplat = @{
+                        "allMecmComputers" = $using:allMecmComputers
+                        "allCpuInfo" = $using:allCpuInfo
+                        "allAdComputers" = $using:allAdComputers
+                        "allModelInfo" = $using:allModelInfo
+                        "hostname" = $_.Name
+                    }
+                    Get-CompInf @CompInfSplat
+                    Write-Information "$(Get-Date -Format "hh:mm:ss") Completed fetching info for computer `"$($_.Name)`""
+                }
             }
-        })
-
-        #Get online status
-        try {
-            $tnc = Test-Connection $hostname -Count 1 -ErrorAction "Stop"
-
-            if ($tnc.Status -eq "TimedOut") {
-                [string]$status = "Offline"
-            }
-            elseif ($tnc.status -eq "Success") {
-                [string]$status = "Online"
+            "Get computer by hostname" {
+                $CompInfSplat = @{
+                    "allMecmComputers" = $allMecmComputers
+                    "allCpuInfo" = $allCpuInfo
+                    "allAdComputers" = $allAdComputers
+                    "allModelInfo" = $allModelInfo
+                    "hostname" = $hostname
+                }
+                $currentCompInf = Get-CompInf @CompInfSplat
+                $compInfExport.Add($currentCompInf)
             }
         }
-        catch [System.Net.NetworkInformation.PingException] {
-            [string]$status = "Can't resolve hostname"
-        }
-
-        $null = $compInfExport.Add(
-            [PSCustomObject]@{
-                Hostname          = $mecmComputer.Name
-                DisplayName       = $adUser.DisplayName
-                Username          = $mecmComputer.LastLogonUserName
-                MACAddress        = $mecmComputer.MACAddresses
-                Model             = $modelInfo.Name
-                SN                = $modelInfo.IdentifyingNumber
-                GUID              = $mecmComputer.SMBIOSGUID
-                CreatedAt         = $mecmComputer.CreationDate
-                DeviceOSBuild     = $mecmComputer.BuildExt
-                OS                = $mecmComputer.OperatingSystemNameandVersion
-                IPv4              = $IPv4
-                "Enabled(AD)"     = $adComputer.Enabled
-                Status            = $status
-                LastHeartbeat     = $lastHeartbeat
-                CpuName           = $cpuInfo.Name
-                Notes             = $notes
-            }
-        )
     }
 
     end {
