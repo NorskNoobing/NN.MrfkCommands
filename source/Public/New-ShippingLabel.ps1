@@ -1,7 +1,9 @@
 function New-ShippingLabel {
     #Requires -Module NN.SnipeIT,NN.WindowsSetup
     param (
-        [Parameter(Mandatory)][string]$location,
+        [Parameter(Mandatory)][ValidateScript({
+            $_ -in (Get-SnipeLocations).name
+        })][string]$location,
         [Parameter(Mandatory)][string]$displayname,
         [int]$copies = 1,
         [string]$mobile
