@@ -32,7 +32,7 @@ function New-LocalAdmin {
     #Add ADUser to admin role on the given hostname
     if (Test-Connection $hostname -Count 1 -Quiet) {
         Invoke-Command -Credential $(Get-AdmCreds) -ComputerName $hostname -ScriptBlock {
-            if (Get-LocalGroupMember -Group Administratorer -Member "intern\$using:admUsername") {
+            if (Get-LocalGroupMember -Group Administratorer -Member "intern\$using:admUsername" -ErrorAction SilentlyContinue) {
                 "User `"$using:admUsername`" is already an administrator on `"$using:hostname`""
             } else {
                 Add-LocalGroupMember -Group Administratorer -Member "intern\$using:admUsername"
@@ -54,3 +54,4 @@ function New-LocalAdmin {
         Send-DiscordMessage -uri (Import-Clixml $discordHookPath | ConvertFrom-SecureString -AsPlainText) -message "Task `"$taskName`" has been created."
     }
 }
+#todo: move scheduled tasks with discord implementation to their own functions
