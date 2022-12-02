@@ -10,16 +10,19 @@ function New-ShippingLabel {
     )
     
     begin {
-        if (Get-Module NN.PwshHelper) {
-            Install-PwshRequiredModules -ModuleNameArray @("NN.SnipeIT","NN.WindowsSetup")
-        } else {
-            Write-Error "Please run `"Install-Module NN.PwshHelper`" before running this function." -ErrorAction Stop
-        }
+        $ModuleNameArray = @("NN.SnipeIT","NN.WindowsSetup")
+        $ModuleNameArray.ForEach({
+            if (Get-InstalledModule $_ -ErrorAction SilentlyContinue) {
+                Import-Module $_ -Force
+            } else {
+                Install-Module $_ -Force
+            }
+        })
     }
     
     process {
         #Get the selected locations address
-        $locationResult = Get-SnipeLocation -name $location
+        $locationResult = Get-SnipeLocations -name $location
 
         $locationName = $locationResult.address
         $address = $locationResult.address2
