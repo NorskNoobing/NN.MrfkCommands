@@ -1,6 +1,5 @@
 #Requires -Module ModuleBuilder
-[string]$moduleName = Split-Path ".\" -LeafBase
-
+[string]$moduleName = "mrfk-commands"
 [version]$version = "0.0.1"
 [string]$author = "NorskNoobing"
 [string]$ProjectUri = "https://github.com/$author/$moduleName"
