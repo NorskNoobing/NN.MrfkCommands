@@ -57,7 +57,7 @@ on SMS_G_System_PROCESSOR.ResourceID = SMS_R_System.ResourceId
                     "hostname" = $hostname
                 }
                 $currentCompInf = Get-CompInf @CompInfSplat
-                $compInfExport.Add($currentCompInf)
+                $null = $compInfExport.Add($currentCompInf)
             }
         }
     }
