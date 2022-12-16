@@ -1,6 +1,9 @@
 function Get-FreeHostnames {
     param (
-        [Parameter(Mandatory)][string]$filter,
+        [Parameter(Mandatory,HelpMessage="Example inputs: `"LT-SADM-`" or `"PC-SADM-`"")][ValidateScript({
+            $_ -like "*-*-"
+        }, ErrorMessage="Please provide a valid input. Valid inputs are `"<device-type>-<locationname>-`" Example: `"LT-SADM-`" or `"PC-VROM-`""
+        )][string]$filter,
         [pscredential]$credential,
         [int]$count
     )
@@ -19,3 +22,5 @@ function Get-FreeHostnames {
         "$filter$num"
     })
 }
+#todo: add $HostnamePrefix="PC","TB","LT" and $LocationName="SADM","VROM",etc.
+#todo: Get all locaiton shorts from hostnames currently in MECM and validatescript
