@@ -1,7 +1,7 @@
 param (
     #Manual params
     [string]$description = "Automate the workflow of caseworkers",
-    [array]$tags = @("MRFK","Mrfylke","Møre og Romsdal Fylkeskommune"),
+    [array]$tags = @("MRFK","Mrfylke"),
     [version]$PsVersion = "5.2",
     [string]$Author = "NorskNoobing",
 
