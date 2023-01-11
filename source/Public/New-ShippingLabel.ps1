@@ -6,18 +6,22 @@ function New-ShippingLabel {
         })][string]$location,
         [Parameter(Mandatory)][string]$displayname,
         [int]$copies = 1,
-        [string]$mobile
+        [string]$mobile,
+        [string]$PrinterNetworkPath = "\\sr-safecom-sla1\PR-STORLABEL-SSDSK"
     )
     
     begin {
-        $ModuleNameArray = @("NN.SnipeIT","NN.WindowsSetup")
-        $ModuleNameArray.ForEach({
+        $RequiredModulesNameArray = @("NN.SnipeIT","NN.WindowsSetup")
+        $RequiredModulesNameArray.ForEach({
             if (Get-InstalledModule $_ -ErrorAction SilentlyContinue) {
                 Import-Module $_ -Force
             } else {
                 Install-Module $_ -Force
             }
         })
+
+        #Install RSAT
+        Install-RSAT -WUServerBypass
     }
     
     process {
@@ -29,27 +33,24 @@ function New-ShippingLabel {
         $postalCode = $locationResult.zip
         $city = $locationResult.city
 
-        if ($displayname -and !$mobile) {
-            #Install RSAT
-            Install-RSAT -WUServerBypass
-
+        if (!$mobile) {
             #Search AD for phonenumber
             [string]$mobile = (Get-ADUser -Filter {DisplayName -like $displayname} -Properties mobile).mobile
         }
 
-        if ($displayname -and $location) {
+        if ($location) {
             #Get current default printer
-            $defaultPrinter = (Get-CimInstance -Class Win32_Printer).where{$_.Default -eq $true}.Name
+            $defaultPrinter = (Get-CimInstance -Class Win32_Printer).where({$_.Default -eq $true}).Name
 
             #Set printer named PR-STORLABEL-SSDSK to default printer
-            if (!(Get-Printer -Name "\\sr-safecom-sla1\PR-STORLABEL-SSDSK" -ErrorAction SilentlyContinue)) {
-                (New-Object -ComObject WScript.Network).AddWindowsPrinterConnection("\\sr-safecom-sla1\PR-STORLABEL-SSDSK")
+            if (!(Get-Printer -Name $PrinterNetworkPath -ErrorAction SilentlyContinue)) {
+                (New-Object -ComObject WScript.Network).AddWindowsPrinterConnection($PrinterNetworkPath)
             }
-            (New-Object -ComObject WScript.Network).SetDefaultPrinter("\\sr-safecom-sla1\PR-STORLABEL-SSDSK")
+            (New-Object -ComObject WScript.Network).SetDefaultPrinter($PrinterNetworkPath)
 
             #Create new Word document
             $WordObj = New-Object -ComObject Word.Application
-            $WordObj.Documents.Add() | Out-Null
+            $null = $WordObj.Documents.Add()
 
             #Set page size and margins
             $WordObj.Selection.PageSetup.PageHeight = "192mm"
@@ -75,11 +76,6 @@ function New-ShippingLabel {
             $address
             $postalCode $city")
 
-            <#
-                https://books.google.no/books?id=rbpNppFdipkC&pg=PT114&lpg=PT114&dq=Application.PrintOut+%22copies%22+%22powershell%22&source=bl&ots=5_iiXja8EA&sig=ACfU3U11_KmhwFHlsOgEXNFcSHXx3rTvww&hl=en&sa=X&ved=2ahUKEwi-td6gzcb6AhXwlosKHTtAA9IQ6AF6BAgsEAM#v=onepage&q=Application.PrintOut%20%22copies%22%20%22powershell%22&f=false
-                https://learn.microsoft.com/en-us/office/vba/api/word.application.printout#parameters
-                I didn't manage to get it working through using the COM-object "copies" parameter, so I used a workaround within PowerShell
-            #>
             (1..$copies).ForEach({
                 #Send To Default Printer
                 $WordObj.PrintOut()
@@ -92,9 +88,5 @@ function New-ShippingLabel {
             $WordObj.ActiveDocument.Close(0)
             $WordObj.quit() 
         }
-    }
-    
-    end {
-        
     }
 }

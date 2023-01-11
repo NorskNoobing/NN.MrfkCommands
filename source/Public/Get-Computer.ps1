@@ -3,7 +3,8 @@ function Get-Computer {
     param (
         [Parameter(Mandatory,ValueFromPipeline,Position=0,ParameterSetName="Get computer by hostname")][string]$hostname,
         [pscredential]$credential,
-        [Parameter(ParameterSetName="List computers")][switch]$ListComputers
+        [Parameter(ParameterSetName="List computers")][switch]$ListComputers,
+        [string]$OutCsvPath
     )
     
     begin {
@@ -57,12 +58,16 @@ on SMS_G_System_PROCESSOR.ResourceID = SMS_R_System.ResourceId
                     "hostname" = $hostname
                 }
                 $currentCompInf = Get-CompInf @CompInfSplat
-                $compInfExport.Add($currentCompInf)
+                $null = $compInfExport.Add($currentCompInf)
             }
         }
     }
 
     end {
-        $compInfExport
+        if ($OutCsvPath) {
+            $compInfExport | Export-Csv $OutCsvPath
+        } else {
+            $compInfExport
+        }
     }
 }
