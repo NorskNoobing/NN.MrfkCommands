@@ -25,13 +25,13 @@ function Get-MrfkUserInfo {
     process {
         switch ($PsCmdlet.ParameterSetName) {
             "username" {
-                $filter = "name -like `"*$Username*`""
+                $filter = "SamAccountName -like `"$Username`""
             }
             "displayname" {
-                $filter = "displayname -like `"*$DisplayName*`""
+                $filter = "DisplayName -like `"$DisplayName`""
             }
             "mobilephone" {
-                $filter = "mobilephone -like `"*$MobilePhone*`""
+                $filter = "MobilePhone -like `"$MobilePhone`""
             }
         }
 
@@ -45,15 +45,27 @@ function Get-MrfkUserInfo {
             }
         })
 
-        #Get userinfo of the ADuser (limited to the first hit, and user can't pick manually "yet")
-        $ADUser = ([array](Get-ADUser -filter $filter -Properties mobilephone,displayName))[0] |
-        Select-Object -ExcludeProperty @(
-            "ObjectClass","ObjectGUID","SID","AddedProperties","RemovedProperties",
-            "ModifiedProperties","PropertyCount","PropertyNames","Line"
+        #Get userinfo of the ADusers
+        $ADUser = Get-ADUser -filter $filter -Properties MobilePhone,DisplayName | Select-Object @(
+            "DisplayName","Name","SamAccountName","MobilePhone",
+            "UserPrincipalName","Enabled","DistinguishedName"
         )
 
+        #Pick an ADUser if we get multiple hits on the search query
+        while ($ADUser -is [array]) {
+            $splat = @{
+                "Title" = "Found multiple hits on the input. Please select the user."
+                "OutputMode" = "Single"
+            }
+            $SelectedADUser = $ADUser | Out-GridView @splat
+
+            if ($SelectedADUser) {
+                $ADUser = $SelectedADUser
+            }
+        }
+
         if ($IncludeComputerInfo) {
-            $ComputerExportArr = Get-MrfkComputerInfo -Username $ADUser.Name
+            $ComputerExportArr = Get-MrfkComputerInfo -Username $ADUser.SamAccountName
             if (!$ExpandComputerInfo) {
                 $ADUser | Add-Member -MemberType NoteProperty -Name "Computers" -Value $ComputerExportArr
             }
