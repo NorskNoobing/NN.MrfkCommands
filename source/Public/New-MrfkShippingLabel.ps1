@@ -1,4 +1,4 @@
-function New-ShippingLabel {
+function New-MrfkShippingLabel {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)][ValidateScript({
