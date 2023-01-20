@@ -52,16 +52,16 @@ function Get-MrfkUserInfo {
         )
 
         #Pick an ADUser if we get multiple hits on the search query
-        while ($ADUser -is [array]) {
+        if ($ADUser -is [array]) {
             $splat = @{
                 "Title" = "Found multiple hits on the input. Please select the user."
                 "OutputMode" = "Single"
             }
-            $SelectedADUser = $ADUser | Out-GridView @splat
+            $ADUser = $ADUser | Out-GridView @splat
+        }
 
-            if ($SelectedADUser) {
-                $ADUser = $SelectedADUser
-            }
+        if (!$ADUser) {
+            Write-Error -ErrorAction "Stop" -Message "Please select a user before continuing."
         }
 
         if ($IncludeComputerInfo) {
