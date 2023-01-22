@@ -19,7 +19,7 @@ function Get-MrfkComputerInfo {
         })
 
         #Install RSAT
-        Install-RSAT -WUServerBypass
+        Install-RSAT
     }
 
     process {
