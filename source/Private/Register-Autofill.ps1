@@ -1,5 +1,5 @@
 $Splat = @{
-    "CommandName" = "New-ShippingLabel"
+    "CommandName" = "New-MrfkShippingLabel"
     "ParameterName" = "location"
     "ScriptBlock" = {
         param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
