@@ -9,17 +9,15 @@ function Get-MrfkUserInfo {
     )
 
     begin {
-        $RequiredModulesNameArray = @("NN.WindowsSetup")
-        $RequiredModulesNameArray.ForEach({
-            if (Get-InstalledModule $_ -ErrorAction SilentlyContinue) {
-                Import-Module $_ -Force
-            } else {
-                Install-Module $_ -Force
-            }
-        })
-
-        #Install RSAT
-        Install-RSAT -WUServerBypass
+        try {
+            $null = Get-ADUser -Filter "Name -eq 0"
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Error -ErrorAction Stop -Message @"
+Please install RSAT before running this function. You can install RSAT by following this guide:
+https://github.com/NorskNoobing/NN.MrfkCommands#prerequisites
+"@
+        }
     }
 
     process {
@@ -35,16 +33,6 @@ function Get-MrfkUserInfo {
             }
         }
 
-        #Install required modules
-        $RequiredModulesNameArray = @('NN.MrfkCommands')
-        $RequiredModulesNameArray.ForEach({
-            if (Get-InstalledModule $_ -ErrorAction SilentlyContinue) {
-                Import-Module $_ -Force
-            } else {
-                Install-Module $_ -Force -Repository PSGallery
-            }
-        })
-
         #Get userinfo of the ADusers
         $ADUser = Get-ADUser -filter $filter -Properties MobilePhone,DisplayName | Select-Object @(
             "DisplayName","Name","SamAccountName","MobilePhone",
@@ -54,7 +42,7 @@ function Get-MrfkUserInfo {
         #Pick an ADUser if we get multiple hits on the search query
         if ($ADUser -is [array]) {
             $splat = @{
-                "Title" = "Found multiple hits on the input. Please select the user."
+                "Title" = "Found multiple hits on the input. Please select an user."
                 "OutputMode" = "Single"
             }
             $ADUser = $ADUser | Out-GridView @splat
