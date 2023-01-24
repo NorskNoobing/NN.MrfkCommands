@@ -1,11 +1,12 @@
 function Get-MrfkComputerInfo {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory,ParameterSetName="Get computer by hostname")]$Hostname,
-        [Parameter(Mandatory,ParameterSetName="Get computers by username")]$Username,
-        $MECMNameSpace = "root/SMS/site_PS1",
-        $MECMHost = "sccm-ps.intern.mrfylke.no",
-        $DC = "dc01.intern.mrfylke.no"
+        [Parameter(Mandatory,ParameterSetName="Get computer by hostname",ValueFromPipeline,Position=0)]
+        [string]$Hostname,
+        [Parameter(Mandatory,ParameterSetName="Get computers by username")][string]$Username,
+        [string]$MECMNameSpace = "root/SMS/site_PS1",
+        [string]$MECMHost = "sccm-ps.intern.mrfylke.no",
+        [string]$DC = "dc01.intern.mrfylke.no"
     )
 
     begin {
@@ -18,10 +19,6 @@ Please install RSAT before running this function. You can install RSAT by follow
 https://github.com/NorskNoobing/NN.MrfkCommands#prerequisites
 "@
         }
-    }
-
-    process {
-        $ComputerExportArr = New-Object -TypeName System.Collections.ArrayList
 
         $splat = @{
             "Credential" = Get-MrfkAdmCreds
@@ -29,6 +26,10 @@ https://github.com/NorskNoobing/NN.MrfkCommands#prerequisites
             "ErrorAction" = "Stop"
         }
         $CimSession = New-CimSession @splat
+    }
+
+    process {
+        $ComputerExportArr = New-Object -TypeName System.Collections.ArrayList
 
         switch ($PsCmdlet.ParameterSetName) {
             "Get computer by hostname" {
