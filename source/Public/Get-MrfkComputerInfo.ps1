@@ -9,17 +9,15 @@ function Get-MrfkComputerInfo {
     )
 
     begin {
-        $RequiredModulesNameArray = @("NN.WindowsSetup")
-        $RequiredModulesNameArray.ForEach({
-            if (Get-InstalledModule $_ -ErrorAction SilentlyContinue) {
-                Import-Module $_ -Force
-            } else {
-                Install-Module $_ -Force
-            }
-        })
-
-        #Install RSAT
-        Install-RSAT
+        try {
+            $null = Get-ADUser -Filter "Name -eq 0"
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Error -ErrorAction Stop -Message @"
+Please install RSAT before running this function. You can install RSAT by following this guide:
+https://github.com/NorskNoobing/NN.MrfkCommands#prerequisites
+"@
+        }
     }
 
     process {
