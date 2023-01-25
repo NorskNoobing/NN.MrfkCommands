@@ -30,6 +30,7 @@ https://github.com/NorskNoobing/NN.MrfkCommands#prerequisites
 
     process {
         $ComputerExportArr = New-Object -TypeName System.Collections.ArrayList
+        $Notes = New-Object -TypeName System.Collections.ArrayList
 
         switch ($PsCmdlet.ParameterSetName) {
             "Get computer by hostname" {
@@ -53,39 +54,49 @@ https://github.com/NorskNoobing/NN.MrfkCommands#prerequisites
             }
             $MecmComputer = Get-CimInstance @splat
             
-            $splat = @{
-                "Query" = @"
+            if ($MecmComputer) {
+                $splat = @{
+                    "Query" = @"
 select distinct SMS_G_System_PROCESSOR.*
 from SMS_R_System
 inner join SMS_G_System_PROCESSOR
 on SMS_G_System_PROCESSOR.ResourceID = SMS_R_System.ResourceId
 where ResourceId = $($MecmComputer.ResourceId)
 "@
-                "Namespace" = $MECMNameSpace
-                "CimSession" = $CimSession
-            }
-            $CPUInfo = Get-CimInstance @splat
-            
-            $splat = @{
-                "Query" = @"
+                    "Namespace" = $MECMNameSpace
+                    "CimSession" = $CimSession
+                }
+                $CPUInfo = Get-CimInstance @splat
+                
+                $splat = @{
+                    "Query" = @"
 Select * from SMS_G_System_Computer_System_Product 
 where ResourceId = $($MecmComputer.ResourceId)
 "@
-                "Namespace" = $MECMNameSpace
-                "CimSession" = $CimSession
+                    "Namespace" = $MECMNameSpace
+                    "CimSession" = $CimSession
+                }
+                $ModelInfo = Get-CimInstance @splat
+            } else {
+                $Notes.Add("Couldn't find `"$Hostname`" in MECM.")
             }
-            $ModelInfo = Get-CimInstance @splat
+
+            try {
+                $ADComputer = Get-ADComputer $_
             
-            $ADComputer = Get-ADComputer $_
-            
-            $splat = @{
-                "Filter" = {objectclass -eq "msFVE-RecoveryInformation"}
-                "SearchBase" = $ADComputer.DistinguishedName
-                "Properties" = "msFVE-RecoveryPassword"
-                "Credential" = Get-MrfkAdmCreds
-                "Server" = $DC
+                $splat = @{
+                    "Filter" = {objectclass -eq "msFVE-RecoveryInformation"}
+                    "SearchBase" = $ADComputer.DistinguishedName
+                    "Properties" = "msFVE-RecoveryPassword"
+                    "Credential" = Get-MrfkAdmCreds
+                    "Server" = $DC
+                }
+                $BitlockerRecoveryKeys = (Get-ADObject @splat)."msFVE-RecoveryPassword"
             }
-            $BitlockerRecoveryKeys = (Get-ADObject @splat)."msFVE-RecoveryPassword"
+            catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
+                $Notes.Add("Couldn't find `"$Hostname`" in AD.")
+            }
+            
             
             if ($MecmComputer.agentname) {
                 $HeartbeatIndex = $MecmComputer.agentname.IndexOf("Heartbeat Discovery")
@@ -102,6 +113,7 @@ where ResourceId = $($MecmComputer.ResourceId)
                     "SN" = $ModelInfo.IdentifyingNumber
                     "LastHeartbeat" = $LastHeartbeat
                     "BitlockerRecoveryKeys" = $BitlockerRecoveryKeys
+                    "Notes" = $Notes
                 }
             )
         })
