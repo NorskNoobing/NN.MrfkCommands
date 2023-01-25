@@ -3,8 +3,7 @@ function Remove-MrfkComputer {
     param (
         [Parameter(Mandatory,ValueFromPipeline,Position=0)][string]$Hostname,
         [string]$MECMNameSpace = "root/SMS/site_PS1",
-        [string]$MECMHost = "sccm-ps.intern.mrfylke.no",
-        [string]$DC = "dc01.intern.mrfylke.no" 
+        [string]$MECMHost = "sccm-ps.intern.mrfylke.no"
     )
 
     begin {
