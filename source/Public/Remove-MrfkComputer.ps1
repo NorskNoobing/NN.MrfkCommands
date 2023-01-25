@@ -18,7 +18,7 @@ https://github.com/NorskNoobing/NN.MrfkCommands#prerequisites
 "@
         }
 
-        $CimSession = New-CimSession -ComputerName $MECMHost -Credential (Get-AdmCreds)
+        $CimSession = New-CimSession -ComputerName $MECMHost -Credential (Get-MrfkAdmCreds)
     }
 
     process {
@@ -41,11 +41,11 @@ Select * from SMS_R_System where name = `"$Hostname`"
         if ($ADComputer) {
             (Get-ADObject -Filter * -SearchBase $ADComputer.DistinguishedName).ForEach({
                 if($_.DistinguishedName -ne $ADComputer.DistinguishedName) {
-                    Remove-ADObject $_.DistinguishedName -Credential (Get-AdmCreds) -Confirm:$false
+                    Remove-ADObject $_.DistinguishedName -Credential (Get-MrfkAdmCreds) -Confirm:$false
                 }
             })
 
-            Remove-ADComputer -Identity $ADComputer.DistinguishedName -Credential (Get-AdmCreds) -Confirm:$false
+            Remove-ADComputer -Identity $ADComputer.DistinguishedName -Credential (Get-MrfkAdmCreds) -Confirm:$false
         }
     }
 }
