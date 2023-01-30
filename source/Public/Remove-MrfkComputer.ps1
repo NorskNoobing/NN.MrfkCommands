@@ -17,7 +17,12 @@ https://github.com/NorskNoobing/NN.MrfkCommands#prerequisites
 "@
         }
 
-        $CimSession = New-CimSession -ComputerName $MECMHost -Credential (Get-MrfkAdmCreds)
+        $splat = @{
+            "Credential" = Get-MrfkAdmCreds
+            "ComputerName" = $MECMHost
+            "ErrorAction" = "Stop"
+        }
+        New-CimSession @splat
     }
 
     process {
