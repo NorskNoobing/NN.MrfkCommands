@@ -78,7 +78,7 @@ where ResourceId = $($MecmComputer.ResourceId)
                 }
                 $ModelInfo = Get-CimInstance @splat
             } else {
-                $Notes.Add("Couldn't find `"$Hostname`" in MECM.")
+                $null = $Notes.Add("Couldn't find `"$Hostname`" in MECM.")
             }
 
             try {
@@ -94,7 +94,7 @@ where ResourceId = $($MecmComputer.ResourceId)
                 $BitlockerRecoveryKeys = (Get-ADObject @splat)."msFVE-RecoveryPassword"
             }
             catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
-                $Notes.Add("Couldn't find `"$Hostname`" in AD.")
+                $null = $Notes.Add("Couldn't find `"$Hostname`" in AD.")
             }
             
             
