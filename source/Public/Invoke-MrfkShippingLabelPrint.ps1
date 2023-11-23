@@ -4,7 +4,7 @@ function Invoke-MrfkShippingLabelPrint {
         [Parameter(Mandatory)][string]$Recipient,
         [Parameter(Mandatory)][string]$Location,
         [int]$copies = 1,
-        [string]$PrinterNetworkPath = "\\sr-safecom-sla1\PR-STORLABEL-SSDSK"
+        [string]$PrinterNetworkPath = "\\print01\PR-SIT-STORLABEL"
     )
 
     process {
